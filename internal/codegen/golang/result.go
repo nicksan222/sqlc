@@ -222,10 +222,11 @@ func buildQueries(req *plugin.GenerateRequest, options *opts.Options, structs []
 			FieldName:    sdk.LowerTitle(query.Name) + "Stmt",
 			MethodName:   query.Name,
 			SourceName:   query.Filename,
-			SQL:          query.Text,
+			SQL:          transformSQLWithSchema(query.Text),
 			Comments:     comments,
 			Table:        query.InsertIntoTable,
 		}
+
 		sqlpkg := parseDriver(options.SqlPackage)
 
 		qpl := int(*options.QueryParameterLimit)
@@ -329,6 +330,14 @@ func buildQueries(req *plugin.GenerateRequest, options *opts.Options, structs []
 	}
 	sort.Slice(qs, func(i, j int) bool { return qs[i].MethodName < qs[j].MethodName })
 	return qs, nil
+}
+
+// Adding a placeholder for the schema name
+func transformSQLWithSchema(query string) string {
+	query = strings.ReplaceAll(query, "FROM ", "FROM `%s`.")
+	query = strings.ReplaceAll(query, "JOIN ", "JOIN `%s`.")
+
+	return query
 }
 
 var cmdReturnsData = map[string]struct{}{
